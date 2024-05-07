@@ -1,0 +1,122 @@
+//Import the Dataset from BaseballSavant
+//Make data for only Qualified Hitters (Players with over 500 Plate Appearances)
+source: baseball is duckdb.table('MLB1524.csv') extend {
+    measure: player_count is count('player_id')
+    measure: hits is sum(hit)
+    measure: hrs is sum(home_run)
+    measure: ss_avg is avg(sprint_speed)
+    measure: sbs is sum(r_total_stolen_base)
+    measure: ks is sum(strikeout)
+    measure: rbis is sum(b_rbi)
+    measure: tbs is sum(b_total_bases)
+    measure: bbs is sum(walk)
+
+view: most_hits is {
+    group_by: hit, `last_name, first_name`, `year`
+    order_by: hit desc
+    limit: 20
+    
+}}
+
+// Number of hits per year to show increase/decrease of offense
+# bar_chart
+run: baseball -> {
+    group_by: `year`
+    aggregate: hits
+    
+}
+// show home run leaders (top 10 total hrs from 2015-2024) and their best 2 years
+run: baseball -> {
+    group_by: `last_name, first_name`
+    aggregate: hrs
+    order_by: hrs desc
+    limit: 10
+    nest: top_10_homeruns_year is {
+        limit: 2
+        group_by: `year`, player_age
+        aggregate: hrs
+    }
+}
+// show non-hits leaders (bottom 10 total hits from 2015-2024) and their best 2 years
+run: baseball -> {
+    group_by: `last_name, first_name`
+    aggregate: hits
+    order_by: hits asc
+    limit: 10
+    nest: last_10_hits_year is {
+        limit: 2
+        group_by: `year`, player_age, ab, batting_avg
+        aggregate: hits
+    }
+}
+run: baseball -> {
+    group_by: `last_name, first_name`
+    aggregate: hits
+    order_by: hits desc
+    limit: 10
+    nest: last_10_hits_year is {
+        limit: 2
+        group_by: `year`, player_age, ab, batting_avg
+        aggregate: hits
+    }
+}
+run: baseball -> {
+    group_by: `last_name, first_name`
+    aggregate: ks
+    order_by: ks desc
+    limit: 10
+    nest: top_10_Ks_year is {
+        limit: 2
+        group_by: `year`, ab, batting_avg
+        aggregate: ks
+    }
+}
+// show the fastest players in the last 9 years
+run: baseball -> {
+    group_by: `last_name, first_name`
+    aggregate: ss_avg
+    limit: 10
+    order_by: ss_avg desc
+    nest: fastest_sprinters_by_year is {
+        limit: 3
+        group_by: sprint_speed, `year`, player_age
+        order_by: sprint_speed desc
+    }
+}
+run: baseball -> {
+    group_by: `last_name, first_name`
+    aggregate: sbs
+    limit: 10
+    order_by: sbs desc
+    nest: fastest_sprinters_by_year is {
+        limit: 3
+        group_by: r_total_stolen_base, sprint_speed, `year`, player_age
+        order_by: r_total_stolen_base desc
+    }
+}
+//Home Runs per year in the entirety of MLB to see how hitters have improved over time
+# bar_chart
+run: baseball -> {
+    group_by: `year`
+    aggregate: hrs
+}
+//Stolen Bases per year 2015-2024 of MLB to see change since rule change
+# bar_chart
+run: baseball -> {
+    group_by: `year`
+    aggregate: sbs
+}
+//Hits per year 2015-2024 of MLB 
+//see if shift ban is impactful
+# bar_chart
+run: baseball -> {
+    group_by: `year`
+    aggregate: hits
+}
+//Total Bases per year 2015-2024 of MLB 
+//see if shift ban is impactful
+# bar_chart
+run: baseball -> {
+    group_by: `year`
+    aggregate: tbs
+}
